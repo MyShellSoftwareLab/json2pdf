@@ -1,0 +1,12 @@
+body {
+    font-family: 'Inter', 'Helvetica', 'Arial', sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 20px;
+    background-color: #ffffff; /* Default bg */
+}
+
+/* Ensure box-sizing */
+*, *::before, *::after {
+    box-sizing: border-box;
+}

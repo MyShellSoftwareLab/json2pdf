@@ -1,0 +1,30 @@
+{
+    "compilerOptions": {
+        "target": "es2017",
+        "module": "commonjs",
+        "lib": [
+            "es6",
+            "es2017",
+            "dom"
+        ],
+        "outDir": "./dist",
+        "rootDir": "./src",
+        "strict": true,
+        "esModuleInterop": true,
+        "resolveJsonModule": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "paths": {
+            "@tailwindcss/node": ["./node_modules/@tailwindcss/node/dist/index.d.ts"]
+        }
+    },
+    "include": [
+        "src/**/*"
+    ],
+    "exclude": [
+        "node_modules",
+        "src/test-*.ts",
+        "src/test-*.d.ts",
+        "src/debug-*.ts"
+    ]
+}

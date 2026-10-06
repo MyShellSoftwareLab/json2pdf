@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# Build
+dist/
+dist-app/
+dist-server/
+build/
+*.js.map
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+*.log
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Environment
+.env
+.env.test
+.env.production
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# OS
+Thumbs.db
+
+# Project specific
+output.pdf
+test-output.pdf
