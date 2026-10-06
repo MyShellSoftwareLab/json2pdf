@@ -41,7 +41,8 @@ With the server running:
 
 - `GET /design-preview`: PDF with one of every element type (`src/data/elementsOneOfEach.ts`).
 - `GET /design-preview-html`: the same content as raw HTML, for inspection in browser devtools.
-- `POST /generate-pdf` with `{ "elements": [...] }`: the real endpoint. It returns `400` with `details` when validation fails.
+- `POST /api/generate-pdf` with `{ "elements": [...], "options": {...} }`: the real endpoint. It returns `400` with `details` when validation fails.
+- `GET /`: the public docs, which are `README.md` rendered by `services/docs.ts`. Editing the README updates the site; keep heading text stable, because sidebar anchors are GitHub-style slugs.
 
 ## Layout
 

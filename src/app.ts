@@ -7,6 +7,7 @@ import { validateElements } from './services/validator';
 import { buildTailwindCss } from './services/tailwind';
 import { resolvePdfOptions, ResolvedPdfOptions } from './services/pdfOptions';
 import { elementsOneOfEach } from './data/elementsOneOfEach';
+import { renderDocsPage } from './services/docs';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -15,8 +16,19 @@ const app = express();
 app.use(morgan('dev'));
 app.use(bodyParser.json({ limit: '50mb' }));
 
-// Serve static files from the dist-app directory
-app.use(express.static(path.join(__dirname, '../dist-app')));
+// Assets de la app de render (los usa /design-preview-html). `index: false` para que `/` no
+// sirva esa app interna sino la documentación.
+app.use(express.static(path.join(__dirname, '../dist-app'), { index: false }));
+
+// Documentación pública: README.md renderizado.
+app.get('/', (req, res) => {
+  try {
+    res.type('html').send(renderDocsPage());
+  } catch (error) {
+    console.error('Error rendering docs:', error);
+    res.status(500).send('Error rendering docs');
+  }
+});
 
 const sendPdf = (res: express.Response, pdfBuffer: Buffer, options: ResolvedPdfOptions) => {
   res.set({
@@ -27,7 +39,7 @@ const sendPdf = (res: express.Response, pdfBuffer: Buffer, options: ResolvedPdfO
   res.send(pdfBuffer);
 };
 
-// Query string de /design-preview -> mismas `options` que acepta POST /generate-pdf
+// Query string de /design-preview -> mismas `options` que acepta POST /api/generate-pdf
 // (ej. ?format=Letter&landscape=true&margin=1in&pageNumbers=true).
 const optionsFromQuery = (query: Record<string, unknown>): Record<string, unknown> => {
   const out: Record<string, unknown> = { disposition: 'inline', filename: 'design-preview' };
@@ -40,7 +52,7 @@ const optionsFromQuery = (query: Record<string, unknown>): Record<string, unknow
   return out;
 };
 
-app.post('/generate-pdf', async (req, res) => {
+app.post('/api/generate-pdf', async (req, res) => {
   try {
     const elements: PdfElement[] = req.body?.elements;
 

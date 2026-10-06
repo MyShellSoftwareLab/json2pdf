@@ -41,7 +41,7 @@ export const elementsOneOfEach: PdfElement[] = [
         type: "numbered_list",
         items: [
             "Write the report as JSON",
-            "POST it to /generate-pdf",
+            "POST it to /api/generate-pdf",
             "Receive a PDF",
             "Spend the time you saved explaining to your manager that yes, it really was that fast",
             "Add a cover page — because every report deserves a dramatic entrance (and a badge, and a subtitle, and a footer)",

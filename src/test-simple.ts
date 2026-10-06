@@ -10,7 +10,7 @@ const elements = [
 
 const main = async () => {
     try {
-        const response = await fetch('http://localhost:8003/generate-pdf', {
+        const response = await fetch('http://localhost:8003/api/generate-pdf', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ elements })

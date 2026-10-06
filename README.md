@@ -4,12 +4,12 @@ Turn a JSON array of report **elements** into a print-ready PDF: A4, Letter or a
 
 Send titles, paragraphs, tables, metrics, charts, or raw HTML styled with **Tailwind CSS**, and get back a PDF. Rendering happens in headless Chromium (Puppeteer), so what you'd see in a browser is what you get on paper.
 
-- **Hosted API:** `https://json2pdf.guss.uk`
+- **Hosted API:** `https://json2pdf.guss.uk/api/generate-pdf` (docs at [json2pdf.guss.uk](https://json2pdf.guss.uk))
 - **Self-hosted:** run your own instance with Node.js and pm2 (see [Self-hosting](#self-hosting)).
 
 ## Features
 
-- **JSON in, PDF out.** One endpoint: `POST /generate-pdf`.
+- **JSON in, PDF out.** One endpoint: `POST /api/generate-pdf`.
 - **Built-in elements:** cover page, titles, paragraphs, lists, tables (with badges, progress bars and heatmap cells), metric cards, and charts (bar, pie, doughnut, radar, horizontal bar, stacked bar, gauge, scatter), all rendered with ECharts.
 - **HTML + Tailwind CSS:** the `html` element accepts any HTML with Tailwind v4 classes (grid, flex, tables, gradients, arbitrary values like `w-[120px]`). Only the classes you use are compiled, and they never leak into the other elements.
 - **Page control:** page size, orientation, margins, scale, page numbers, custom header/footer, PDF title and bookmarks (see [PDF options](#pdf-options)), plus `page_break` elements and automatic page breaks before each `title`.
@@ -20,7 +20,7 @@ Send titles, paragraphs, tables, metrics, charts, or raw HTML styled with **Tail
 
 ## Using the API
 
-### `POST /generate-pdf`
+### `POST /api/generate-pdf`
 
 **Request:** `Content-Type: application/json`, with a body containing an `elements` array and an optional `options` object (max 50 MB total):
 
@@ -108,7 +108,7 @@ Things to keep in mind:
 **curl**
 
 ```bash
-curl -X POST https://json2pdf.guss.uk/generate-pdf \
+curl -X POST https://json2pdf.guss.uk/api/generate-pdf \
   -H "Content-Type: application/json" \
   -d '{"elements":[{"type":"title","content":"Hello"},{"type":"paragraph","content":"My first PDF"}]}' \
   -o report.pdf
@@ -117,7 +117,7 @@ curl -X POST https://json2pdf.guss.uk/generate-pdf \
 **JavaScript (Node 18+ / browser)**
 
 ```js
-const res = await fetch('https://json2pdf.guss.uk/generate-pdf', {
+const res = await fetch('https://json2pdf.guss.uk/api/generate-pdf', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -139,7 +139,7 @@ require('fs').writeFileSync('report.pdf', pdf);
 import requests
 
 res = requests.post(
-    "https://json2pdf.guss.uk/generate-pdf",
+    "https://json2pdf.guss.uk/api/generate-pdf",
     json={"elements": [{"type": "title", "content": "Hello"}, {"type": "paragraph", "content": "My first PDF"}]},
     timeout=60,
 )
@@ -149,10 +149,11 @@ open("report.pdf", "wb").write(res.content)
 
 For a self-hosted instance, replace `https://json2pdf.guss.uk` with your own URL (e.g. `http://localhost:8003`).
 
-### Preview routes
+### Other routes
 
 | Route | What it returns |
 |---|---|
+| `GET /` | This documentation, rendered from `README.md` |
 | `GET /design-preview` | A PDF with one of every element type, so you can see what's available. It accepts [PDF options](#pdf-options) as query parameters, e.g. `/design-preview?format=Letter&landscape=true&margin=15mm&pageNumbers=true`. |
 | `GET /design-preview-html` | The same document as HTML, before it's printed, to inspect with browser devtools |
 

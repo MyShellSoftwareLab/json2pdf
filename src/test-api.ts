@@ -5,7 +5,7 @@ import exampleData from './exampleData.json';
 // Example data provided in the prompt
 const main = async () => {
     try {
-        const response = await fetch('http://localhost:8003/generate-pdf', {
+        const response = await fetch('http://localhost:8003/api/generate-pdf', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

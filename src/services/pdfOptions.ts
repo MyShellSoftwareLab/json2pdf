@@ -1,7 +1,7 @@
 import type { PDFOptions } from 'puppeteer';
 
 // =============================================================================
-// Opciones de impresión del PDF (`options` en el payload de POST /generate-pdf).
+// Opciones de impresión del PDF (`options` en el payload de POST /api/generate-pdf).
 // Todo es opcional: sin `options` el resultado es el de siempre (A4 vertical, márgenes 20px).
 // =============================================================================
 

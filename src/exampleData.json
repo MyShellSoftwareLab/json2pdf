@@ -206,6 +206,6 @@
     },
     {
         "type": "html",
-        "content": "<div class=\"mt-4 flex items-center justify-between gap-4 rounded-2xl bg-gradient-to-r from-slate-900 to-blue-700 px-6 py-5 text-white\"><div><p class=\"text-lg font-semibold\">Ready to change your life?</p><p class=\"text-sm text-blue-100\">POST your JSON to <code class=\"rounded bg-white/15 px-1\">/generate-pdf</code> and see what happens.</p></div><span class=\"rounded-full bg-white/20 px-4 py-1 text-sm font-medium\">It's free</span></div>"
+        "content": "<div class=\"mt-4 flex items-center justify-between gap-4 rounded-2xl bg-gradient-to-r from-slate-900 to-blue-700 px-6 py-5 text-white\"><div><p class=\"text-lg font-semibold\">Ready to change your life?</p><p class=\"text-sm text-blue-100\">POST your JSON to <code class=\"rounded bg-white/15 px-1\">/api/generate-pdf</code> and see what happens.</p></div><span class=\"rounded-full bg-white/20 px-4 py-1 text-sm font-medium\">It's free</span></div>"
     }
 ]
