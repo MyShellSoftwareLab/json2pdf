@@ -46,11 +46,15 @@ const titleLines = computed(() => (Array.isArray(props.element.title) ? props.el
 ============================================================================= */
 .cover {
     box-sizing: border-box;
-    width: 100%;
-    /* El viewport ya es el área imprimible de la hoja (ver pdfOptions.ts), así que 100vh es
-       exactamente una página, sin importar tamaño, orientación o márgenes. */
+    /* Hoja propia sin márgenes (@page cover en base.css): la portada siempre va a sangre, sin
+       importar `options.margin`. Al imprimir, vw/vh se resuelven contra esa hoja, así que
+       100vw x 100vh es la página completa. `calc(50% - 50vw)` la corre hasta el borde
+       izquierdo (todos los contenedores están centrados), y -20px compensa el padding
+       superior del body. */
+    page: cover;
+    width: 100vw;
     min-height: 100vh;
-    margin: -20px -20px 0 -20px;
+    margin: -20px 0 0 calc(50% - 50vw);
     padding: 60px 64px;
     display: flex;
     flex-direction: column;

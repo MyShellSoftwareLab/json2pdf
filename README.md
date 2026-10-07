@@ -65,14 +65,14 @@ Everything in `options` is optional. Without it you get the default: A4 portrait
 | `format` | string | `"A4"` | Page size: `A0`–`A6`, `Letter`, `Legal`, `Tabloid`, `Ledger` (case-insensitive). |
 | `width`, `height` | length | none | Custom page size, e.g. `"200mm"` and `"150mm"`. Set both; they replace `format`. |
 | `landscape` | boolean | `false` | Landscape orientation. |
-| `margin` | length or object | `"20px"` | One value for all sides (`"15mm"`), or per side: `{ "top": "1cm", "right": 30, "bottom": "15mm", "left": "0.5in" }`. Sides you leave out stay at `20px`. |
+| `margin` | length or object | `"20px"` | One value for all sides (`"15mm"`), or per side: `{ "top": "1cm", "right": 30, "bottom": "15mm", "left": "0.5in" }`. Sides you leave out stay at `20px`. The cover page always has no margins. |
 | `scale` | number | `1` | Zoom the content, from `0.1` to `2`. `0.8` fits more per page, `1.2` makes everything bigger. |
 | `printBackground` | boolean | `true` | Print background colors and images. `false` gives a printer-friendly, ink-saving PDF. |
 | `pageRanges` | string | all pages | Only include some pages, e.g. `"1-3, 5"`. |
 | `pageNumbers` | boolean or object | `false` | `true` prints "Page N of M" centered in the footer. Customize it with `{ "format": "Página {page} de {total}", "align": "left\|center\|right", "position": "footer\|header" }`. |
 | `headerTemplate`, `footerTemplate` | HTML string | none | A custom header/footer on every page (see below). Takes priority over `pageNumbers` on the same side. |
 | `title` | string | `"Report"` | PDF document title, shown in PDF viewers' title bars. |
-| `theme` | string | `"default"` | Visual theme: `default`, `blue`, or any theme added to `themes/` (see [Themes](#themes)). `GET /api/themes` lists them. |
+| `theme` | string | `"default"` | Visual theme: `default`, `blue`, `fumisan`, or any theme added to `themes/` (see [Themes](#themes)). `GET /api/themes` lists them. |
 | `outline` | boolean | `false` | Add PDF bookmarks generated from the document's headings (cover, `title` elements, and headings inside `html` elements). |
 | `filename` | string | `"report"` | Download filename. `.pdf` is added automatically, and unsafe characters are removed. |
 | `disposition` | string | `"attachment"` | `"inline"` makes browsers open the PDF instead of downloading it. |
@@ -103,6 +103,7 @@ Charts, the cover page and the HTML elements adapt to the printable area, so a l
 Things to keep in mind:
 - Header and footer HTML doesn't load external CSS, fonts or Tailwind. Use inline `style` attributes, and always set a `font-size`, since the default is tiny.
 - They're drawn inside the top and bottom margins. When a header or footer is on, that margin defaults to `48px`; set a bigger margin if your template needs more room.
+- They also print on the cover page, which has no margins, so there they overlap the cover's bottom (or top) edge. Chromium can't skip a page, so keep cover content away from that edge if you use them.
 
 ### Themes
 
@@ -118,6 +119,7 @@ Try them on the full sample document: [`/design-preview?theme=default`](https://
 |---|---|
 | `default` | Monochrome: dark grays on a white page for text, tables and charts. The only color is the severity green / amber / red, in quieter dark tones. |
 | `blue` | Blue on blue: deep-blue cover with large circles, a gradient pill under titles, dots before subtitles, blue charts and tables on rounded cards. |
+| `fumisan` | The SISFUM / FUMISAN brand: the `blue` layout in the customer portal's colors, with a navy cover and table headers (`#293C91`), blue accents (`#0F70B7`) and the portal's green / amber / red for severity. |
 
 #### Creating a theme
 
@@ -212,7 +214,7 @@ Every element is an object with a `type`. Text fields (`content`, `subtitle`, �
 
 | Type | Shape |
 |---|---|
-| `cover_page` | `{"type":"cover_page","title":"...","subtitle":"...","badge":"...","footer":"...","logo":"https://... or data:image/..."}`. Full-page cover; only `title` is required. `title` can also be an array of lines: `[{"text":"Annual"},{"text":"Report","accent":true}]`. |
+| `cover_page` | `{"type":"cover_page","title":"...","subtitle":"...","badge":"...","footer":"...","logo":"https://... or data:image/..."}`. Full-page cover, always printed edge to edge: its page has no margins, whatever `options.margin` says. Only `title` is required. `title` can also be an array of lines: `[{"text":"Annual"},{"text":"Report","accent":true}]`. |
 | `title` | `{"type":"title","content":"..."}`. Starts a new page, unless it's the first element or follows the cover. |
 | `subtitle` | `{"type":"subtitle","content":"..."}`. Stays on the same page as the element after it, so it's never left alone at the bottom of a page. |
 | `paragraph` | `{"type":"paragraph","content":"..."}` |

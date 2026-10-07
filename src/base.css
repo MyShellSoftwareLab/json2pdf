@@ -6,6 +6,12 @@ body {
     background-color: #ffffff; /* Default bg */
 }
 
+/* La hoja de la portada no lleva márgenes, sin importar `options.margin` (ver .cover en
+   CoverPage.vue, que se asigna a esta página con `page: cover`). */
+@page cover {
+    margin: 0;
+}
+
 /* Ensure box-sizing */
 *, *::before, *::after {
     box-sizing: border-box;
