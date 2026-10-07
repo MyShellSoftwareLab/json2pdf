@@ -123,7 +123,22 @@ Try them on the full sample document: [`/design-preview?theme=default`](https://
 
 #### Creating a theme
 
-On a self-hosted instance, add a file to `themes/` (e.g. `themes/forest.css`) and request `"theme": "forest"`. No restart or rebuild is needed. `themes/default.css` is always loaded first and your theme on top of it, so a theme only declares what it changes. A theme can do two things:
+Custom themes need a **self-hosted** instance (see [Self-hosting](#self-hosting)); the hosted API only offers the built-in themes.
+
+1. Copy the default theme into the `themes/custom/` folder under a new name:
+
+   ```bash
+   cp themes/default.css themes/custom/acme.css
+   ```
+
+2. Edit `themes/custom/acme.css` and request it with `"options": { "theme": "acme" }` (or `/design-preview?theme=acme`). No restart or rebuild is needed.
+
+How custom themes work:
+- **Private:** every `.css` file in `themes/custom/` is ignored by git. Client-branded themes are never committed, and `git pull` never overwrites them.
+- **Lookup order:** a theme is looked up in `themes/custom/` first, then in `themes/`. A custom theme with a built-in name (e.g. `themes/custom/blue.css`) replaces that built-in theme.
+- **Stacking:** the default theme is always loaded first and yours on top, so you can also delete everything you don't change.
+
+A theme can do two things:
 
 1. **Override design tokens.** These are CSS variables that every element and chart reads: colors (`--primary-50` … `--primary-700`, `--secondary-*`, `--surface-*`, `--chart-success`, `--chart-palette-1` … `--chart-palette-8` for chart series, `--heatmap-*`…), typography (`--font-family`, `--font-size-title`, `--font-weight-bold`…), spacing and radius (`--space-*`, `--radius-*`). See `themes/default.css` for the full list.
 
@@ -501,7 +516,8 @@ src/
 ├── apply-theme.ts              Injects the theme CSS into the render page
 ├── types.ts                    Element type definitions
 └── data/elementsOneOfEach.ts   Design-preview sample
-themes/                         Theme CSS files (default.css, blue.css, …)
+themes/                         Built-in theme CSS files (default.css, blue.css, …)
+themes/custom/                  Your own themes (git-ignored, looked up first)
 ecosystem.config.js             pm2 config
 ```
 

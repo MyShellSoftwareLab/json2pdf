@@ -62,11 +62,12 @@ src/
     elements/*.vue          One component per element type
   theme.ts                  Reads design tokens (theme.X <-> --x CSS variable) from the active theme at load time
   apply-theme.ts            Injects window.__PDF_THEME_CSS__ as a <style>; imported FIRST by render-app.ts
-  services/themes.ts        Lists/loads themes/*.css (default.css always first, chosen theme on top)
+  services/themes.ts        Lists/loads themes: themes/custom/<name>.css first, then themes/<name>.css (default always first, chosen theme on top)
   icons.ts                  Lucide SVG paths -> data URIs (dimension/department icons)
   data/elementsOneOfEach.ts Design-preview fixture covering every element
   exampleData.json          Sample payload for test-api.ts
-themes/                     Theme CSS files: tokens as CSS variables + optional `.pdf ...` override rules
+themes/                     Built-in theme CSS files: tokens as CSS variables + optional `.pdf ...` override rules
+themes/custom/              Per-installation themes, git-ignored (*.css). Never commit client themes; only its README is tracked
 ```
 
 ## Adding or changing an element type

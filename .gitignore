@@ -37,3 +37,6 @@ Thumbs.db
 # Project specific
 output.pdf
 test-output.pdf
+
+# Custom themes (self-hosted, private): only the folder's README is versioned
+themes/custom/*.css
