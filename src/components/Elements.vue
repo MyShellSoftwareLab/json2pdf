@@ -52,7 +52,7 @@
 
                 <!-- Charts -->
                 <ChartItem
-                    v-else-if="['bar_chart','pie_chart','radar_chart','doughnut_chart','horizontal_bar','stacked_bar','velocimeter','scatter_plot'].includes(element.type)"
+                    v-else-if="['bar_chart','pie_chart','radar_chart','doughnut_chart','horizontal_bar','stacked_bar','line_chart','velocimeter','scatter_plot'].includes(element.type)"
                     :element="element" />
             </section>
         </template>
@@ -138,6 +138,13 @@ const blocks = computed(() => {
 
 .pdf__break-before {
     break-before: page;
+}
+
+/* Un subtítulo encabeza lo que sigue: si no cabe junto con ese bloque, se va con él a la hoja
+   siguiente en vez de quedarse solo al pie de página (las tablas no se parten, ver
+   break-inside en Table.vue, así que sin esto el subtítulo quedaba huérfano). */
+.pdf__block--subtitle {
+    break-after: avoid;
 }
 
 /* La portada hace su propio full-bleed (márgenes negativos) — sin esto heredaría el

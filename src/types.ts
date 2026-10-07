@@ -83,6 +83,12 @@ export interface TableElement extends BaseElement {
   title?: string;
   headers: (string | RichContent)[];
   rows: TableCell[][];
+  /**
+   * Ancho de cada columna, en el mismo orden que `headers`: porcentaje (`"50%"`), longitud
+   * CSS (`"120px"`, `"30mm"`) o número (píxeles). Sin esto la primera columna toma el 22% y
+   * el resto se reparte en partes iguales.
+   */
+  column_widths?: (string | number)[];
 }
 
 
@@ -320,6 +326,32 @@ export interface AlertsSectionElement extends BaseElement {
   riskSegmentsTotal?: number;
 }
 
+export interface LineChartSeries {
+  name: string;
+  // Mismo largo que `labels`. `null` = sin dato: deja un hueco (no se dibuja como 0 ni se une).
+  values: (number | null)[];
+  color?: string;
+  dashed?: boolean;
+}
+
+// Franja horizontal de fondo (ej. semáforo de niveles), entre `from` y `to` del eje Y.
+export interface LineChartBand {
+  from: number;
+  to: number;
+  color?: string;
+  label?: string;
+}
+
+export interface LineChartElement extends BaseElement {
+  type: 'line_chart';
+  title: string;
+  labels: string[];
+  series: LineChartSeries[];
+  // Escala fija del eje Y (ej. 0-100) y nombre del eje. Sin min/max, ECharts autoescala.
+  y_axis?: { min?: number; max?: number; label?: string };
+  bands?: LineChartBand[];
+}
+
 export interface StackedBarDataPoint {
   label: string;
   values: { [key: string]: number };
@@ -372,6 +404,7 @@ export type PdfElement =
   | DoughnutChartElement
   | HorizontalBarElement
   | StackedBarElement
+  | LineChartElement
   | VelocimeterElement
   | ScatterPlotElement
   | BulletPointsElement;

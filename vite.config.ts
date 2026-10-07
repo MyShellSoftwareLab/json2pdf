@@ -8,7 +8,7 @@ export default defineConfig({
     vue(),
     dts({
       insertTypesEntry: true,
-      include: ['src/index.ts', 'src/components/**/*', 'src/types.ts', 'src/theme.ts', 'src/services/**/*'],
+      include: ['src/index.ts', 'src/components/**/*', 'src/types.ts', 'src/theme.ts', 'src/services/**/*', 'src/vue-shims.d.ts'],
       rollupTypes: true
     })
   ],

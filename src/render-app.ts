@@ -1,3 +1,5 @@
+// Primero: el tema tiene que estar en la página antes de que theme.ts lea sus tokens.
+import './apply-theme';
 import { createApp } from 'vue';
 import Elements from './components/Elements.vue';
 import './base.css';
@@ -38,7 +40,10 @@ import { nextTick } from 'vue';
 nextTick(() => {
     // In a real scenario, if charts loaded async data or images, we'd need to wait.
     // Here we assume synchronous data.
+    // Esperar también a las fuentes (un tema puede traer la suya vía @import / @font-face).
     setTimeout(() => {
-        window.RENDER_COMPLETE = true;
+        document.fonts.ready.then(() => {
+            window.RENDER_COMPLETE = true;
+        });
     }, 100); 
 });

@@ -1,4 +1,5 @@
 import type { PDFOptions } from 'puppeteer';
+import { DEFAULT_THEME, isValidTheme, listThemes } from './themes';
 
 // =============================================================================
 // Opciones de impresión del PDF (`options` en el payload de POST /api/generate-pdf).
@@ -31,6 +32,8 @@ export interface PdfRenderOptions {
     headerTemplate?: string;
     footerTemplate?: string;
     title?: string;
+    // Nombre de un tema en /themes (ej. "blue"). Default "default".
+    theme?: string;
     outline?: boolean;
     filename?: string;
     disposition?: 'attachment' | 'inline';
@@ -42,6 +45,7 @@ export interface ResolvedPdfOptions {
     // renderiza el HTML, para que charts y `100vh` (portada) correspondan a la hoja real.
     viewport: { width: number; height: number };
     title?: string;
+    theme: string;
     filename: string;
     disposition: 'attachment' | 'inline';
 }
@@ -178,6 +182,9 @@ export const resolvePdfOptions = (raw: unknown): { errors: string[]; options: Re
         errors.push("'pageRanges' must look like \"1-3, 5\".");
     }
     if (o.title !== undefined && typeof o.title !== 'string') errors.push("'title' must be a string.");
+    if (o.theme !== undefined && (typeof o.theme !== 'string' || !isValidTheme(o.theme))) {
+        errors.push(`'theme' must be one of: ${listThemes().join(', ')}.`);
+    }
     if (o.disposition !== undefined && !['attachment', 'inline'].includes(o.disposition)) errors.push("'disposition' must be 'attachment' or 'inline'.");
     if (o.filename !== undefined && typeof o.filename !== 'string') errors.push("'filename' must be a string.");
 
@@ -221,6 +228,7 @@ export const resolvePdfOptions = (raw: unknown): { errors: string[]; options: Re
             pdf,
             viewport,
             title: typeof o.title === 'string' ? o.title : undefined,
+            theme: typeof o.theme === 'string' && isValidTheme(o.theme) ? o.theme : DEFAULT_THEME,
             filename: `${base}.pdf`,
             disposition: o.disposition ?? 'attachment',
         },

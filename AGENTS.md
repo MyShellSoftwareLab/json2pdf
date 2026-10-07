@@ -60,10 +60,13 @@ src/
     RichText.vue            Renders inline HTML/rich content inside text elements
     chartOptionBuilders.ts  ECharts option builders per chart type, severity colors, palette
     elements/*.vue          One component per element type
-  theme.ts                  Design tokens (colors, fonts, sizes) — neutral Tailwind-based palette
+  theme.ts                  Reads design tokens (theme.X <-> --x CSS variable) from the active theme at load time
+  apply-theme.ts            Injects window.__PDF_THEME_CSS__ as a <style>; imported FIRST by render-app.ts
+  services/themes.ts        Lists/loads themes/*.css (default.css always first, chosen theme on top)
   icons.ts                  Lucide SVG paths -> data URIs (dimension/department icons)
   data/elementsOneOfEach.ts Design-preview fixture covering every element
   exampleData.json          Sample payload for test-api.ts
+themes/                     Theme CSS files: tokens as CSS variables + optional `.pdf ...` override rules
 ```
 
 ## Adding or changing an element type
@@ -80,14 +83,14 @@ Keep these places in sync:
 ## Conventions
 
 - **Components**: `<script setup lang="ts">`, `defineProps<{ element: XElement }>()`, scoped styles, BEM-style classes (`el-subtitle`, `pdf__block--<type>`).
-- **Styling**: pull colors, fonts and sizes from `theme.ts` with `v-bind('theme.X')` in CSS. Don't hardcode hex values. The default palette is Tailwind blue (primary), slate (secondary) and gray (surface). To re-brand, change the values in `theme.ts`, not individual components. The font is Inter (Google Fonts in `index.html`). For translucent tints use `hexToRgba(theme.X, a)` in TS or `color-mix(in srgb, v-bind('theme.X') N%, transparent)` in CSS.
+- **Styling / themes**: token VALUES live in `themes/default.css` (CSS variables), not in code. `theme.ts` exports one constant per token, read at module load from the theme CSS that `apply-theme.ts` injected (falling back to the bundled `default.css` outside the PDF page). Components use `v-bind('theme.X')` in CSS and builders use `theme.X`. Don't hardcode colors: add a token to `default.css` + an export in `theme.ts`. Other themes (`themes/blue.css`) only override tokens and may add `.pdf <selector>` rules, which win over scoped component styles because the theme `<style>` is appended last. Chart color tokens must stay hex. For translucent tints use `hexToRgba(theme.X, a)` in TS or `color-mix(in srgb, v-bind('theme.X') N%, transparent)` in CSS. The font is Inter (Google Fonts in `index.html`). Check both `/design-preview` and `/design-preview?theme=blue` after visual changes.
 - **Severity**: the levels are `success | warning | error | info`. Score thresholds (≥70 success, ≥55 warning, else error) live in `chartOptionBuilders.ts`. Reuse the existing helper and don't add new thresholds.
 - **Charts**: ECharts with `renderer: 'svg'` and `animation = false`, so the PDF is captured fully drawn. Anything async in rendering has to finish before `RENDER_COMPLETE` is set (`render-app.ts`).
 - **Print layout**: use CSS `break-before` / `break-inside`. Page breaks between blocks are computed in `Elements.vue` (`blocks`): a `title` or a preceding `{ "type": "page_break" }` marks the next block `pdf__break-before`, except for the first block and the block right after `cover_page`. `page_break` never renders its own section, so it can't produce blank pages. `cover_page` handles its own full-bleed page.
 - **Icons**: add Lucide path strings to `icons.ts` (copied verbatim from `lucide-vue-next`) instead of hand-drawn SVGs.
 - **Language**: code identifiers are English. Many code comments and sample report text are Spanish, so match the language of the surrounding comments.
 - **`html` element (Tailwind)**: `services/tailwind.ts` compiles Tailwind v4 server-side per report, using the `class` attributes of every `html` element as candidates. The preflight reset and utilities are wrapped in `@scope (.el-html)`, so they only touch that element's content. The CSS reaches the page as `window.__PDF_TAILWIND_CSS__` (injected by `pdfGenerator.ts` and `/design-preview-html`, applied in `render-app.ts`). `HtmlContent.vue` sanitizes with DOMPurify. Keep both the scoping and the sanitizing: Puppeteer runs with file:// access.
-- **PDF options**: `resolvePdfOptions()` in `services/pdfOptions.ts` turns the payload's optional `options` into Puppeteer `PDFOptions` plus a viewport equal to the printable area ((page − margins) / scale). The cover's `min-height: 100vh` and chart widths depend on that, so don't hardcode page dimensions anywhere. New options need validation there, a row in the README's "PDF options" table, and they also work as `/design-preview` query params via `optionsFromQuery()` in `app.ts`.
+- **PDF options**: `resolvePdfOptions()` in `services/pdfOptions.ts` turns the payload's optional `options` (including `theme`) into Puppeteer `PDFOptions` plus a viewport equal to the printable area ((page − margins) / scale). The cover's `min-height: 100vh` and chart widths depend on that, so don't hardcode page dimensions anywhere. New options need validation there, a row in the README's "PDF options" table, and they also work as `/design-preview` query params via `optionsFromQuery()` in `app.ts`.
 - **Cover logo**: `cover_page` takes an optional `logo` (URL or data URI). No logo is bundled.
 - **Library surface**: changes to `src/index.ts`, `types.ts` or `theme.ts` affect downstream consumers via `dist/` types. Keep exports backward compatible.
 

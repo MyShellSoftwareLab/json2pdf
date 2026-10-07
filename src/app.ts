@@ -8,6 +8,7 @@ import { buildTailwindCss } from './services/tailwind';
 import { resolvePdfOptions, ResolvedPdfOptions } from './services/pdfOptions';
 import { elementsOneOfEach } from './data/elementsOneOfEach';
 import { renderDocsPage } from './services/docs';
+import { listThemes, loadThemeCss } from './services/themes';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -51,6 +52,11 @@ const optionsFromQuery = (query: Record<string, unknown>): Record<string, unknow
   }
   return out;
 };
+
+// Temas disponibles (archivos en /themes) — los valores válidos de `options.theme`.
+app.get('/api/themes', (req, res) => {
+  res.json({ themes: listThemes() });
+});
 
 app.post('/api/generate-pdf', async (req, res) => {
   try {
@@ -105,11 +111,19 @@ app.get('/design-preview-html', async (req, res) => {
       return;
     }
 
+    // Mismas opciones por query que /design-preview; aquí solo aplican `theme` y `title`.
+    const { errors, options } = resolvePdfOptions(optionsFromQuery(req.query as Record<string, unknown>));
+    if (errors.length > 0) {
+      res.status(400).json({ error: 'Invalid options', details: errors });
+      return;
+    }
+
     let html = fs.readFileSync(appPath, 'utf-8');
     const tailwindCss = await buildTailwindCss(elementsOneOfEach);
+    const themeCss = loadThemeCss(options.theme);
     // `<` escapado para que ningún "</script>" dentro de los datos cierre el tag antes de tiempo.
     const toScriptJson = (value: unknown) => JSON.stringify(value).replace(/</g, '\\u003c');
-    const dataScript = `<script>window.__PDF_ELEMENTS__ = ${toScriptJson(elementsOneOfEach)};window.__PDF_TAILWIND_CSS__ = ${toScriptJson(tailwindCss)};</script>`;
+    const dataScript = `<script>window.__PDF_ELEMENTS__ = ${toScriptJson(elementsOneOfEach)};window.__PDF_TAILWIND_CSS__ = ${toScriptJson(tailwindCss)};window.__PDF_THEME_CSS__ = ${toScriptJson(themeCss)};window.__PDF_TITLE__ = ${toScriptJson(options.title ?? null)};</script>`;
 
     // Inject data before the closing head tag or at the beginning of body
     html = html.replace('</head>', `${dataScript}</head>`);

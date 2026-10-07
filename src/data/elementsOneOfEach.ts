@@ -106,6 +106,8 @@ export const elementsOneOfEach: PdfElement[] = [
         type: "table",
         title: "Table — Monthly Summary (More Rows)",
         headers: ["Month", "PDFs", "Deploys", "Mood", "Notes"],
+        // Notes gets the room; without column_widths every column after the first is equal.
+        column_widths: ["15%", "13%", "17%", "15%", "40%"],
         rows: [
             ["Jan", 132, 18, { text: "OK", severity: "success", variant: "soft" }, "New year, new reports"],
             ["Feb", 154, 21, { text: "OK", severity: "success", variant: "soft" }, "Builds got faster; nobody knows why"],
@@ -256,6 +258,25 @@ export const elementsOneOfEach: PdfElement[] = [
             { label: "May", values: { "API": 360, "Scheduled jobs": 160, "Panic button": 110 } },
             { label: "Jun", values: { "API": 310, "Scheduled jobs": 125, "Panic button": 84 } },
         ]
+    },
+
+    { type: "page_break" },
+    // Line chart: 2 series, null gaps, dashed series, fixed 0-100 axis and background bands
+    {
+        type: "line_chart",
+        title: "Year-over-Year Risk of a Broken PDF",
+        labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+        series: [
+            { name: "2026", values: [97, 96, 94.85, 92.5, 90, 87.5, 85, 82.5, 80, 77.5, null, null], color: "#2563EB" },
+            { name: "2025", values: [null, null, null, null, null, null, null, null, null, null, 99, 98], color: "#9CA3AF", dashed: true },
+            { name: "Isolated month", values: [null, null, null, null, null, 45, null, null, null, null, null, null], color: "#10B981" },
+        ],
+        y_axis: { min: 0, max: 100, label: "Risk" },
+        bands: [
+            { from: 0, to: 30, color: "#E8F6EC", label: "Low" },
+            { from: 30, to: 60, color: "#FFF6DB", label: "Medium" },
+            { from: 60, to: 100, color: "#FDECEE", label: "High" },
+        ],
     },
 
     { type: "page_break" },

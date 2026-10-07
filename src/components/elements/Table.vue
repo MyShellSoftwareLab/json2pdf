@@ -1,8 +1,11 @@
 <template>
-    <div class="el-table" :class="{ 'el-table--dense': isDense }">
+    <div class="el-table" :class="{ 'el-table--dense': isDense, 'el-table--custom-widths': columnWidths }">
         <div v-if="element.title" class="el-block-title">{{ element.title }}</div>
 
         <table class="el-table__table">
+            <colgroup v-if="columnWidths">
+                <col v-for="(width, w) in columnWidths" :key="w" :style="{ width }" />
+            </colgroup>
             <thead>
                 <tr>
                     <th v-for="(header, h) in element.headers" :key="h"><RichText :content="header" /></th>
@@ -32,6 +35,16 @@ const props = defineProps<{
 // (pensados para tablas de 2-3 columnas) hacen que la tabla no quepa en el ancho de una hoja
 // A4 en retrato — se reduce el espaciado/tamaño de fuente solo para estos casos.
 const isDense = computed(() => (props.element.headers?.length || 0) > 6);
+
+// Anchos explícitos por columna (ver TableElement.column_widths). Con table-layout:fixed el
+// <colgroup> manda sobre el reparto en partes iguales; un número son píxeles, igual que las
+// longitudes de `options`.
+const columnWidths = computed(() => {
+    const widths = props.element.column_widths;
+    if (!widths?.length) return null;
+
+    return widths.map(width => (typeof width === 'number' ? `${width}px` : width.trim()));
+});
 
 // Heatmap de celda completa (ver RichText.vue: isCellFill) — el color de fondo lo decide el
 // <td> real, no un wrapper interno, para que pinte la celda completa (padding incluido) sin
@@ -96,8 +109,9 @@ TABLE — estilo como la imagen (sin cambiar markup ni data)
 
 /* La primera columna (etiqueta/nombre) necesita más espacio que el resto — sin esto,
    table-layout:fixed reparte el ancho en partes iguales entre todas las columnas. */
-.el-table__table th:first-child,
-.el-table__table td:first-child {
+/* Con column_widths el <colgroup> decide todos los anchos — este 22% competiría con él. */
+.el-table:not(.el-table--custom-widths) .el-table__table th:first-child,
+.el-table:not(.el-table--custom-widths) .el-table__table td:first-child {
     width: 22%;
 }
 

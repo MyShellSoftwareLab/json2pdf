@@ -8,6 +8,7 @@ import {
   DoughnutChartElement,
   HorizontalBarElement,
   StackedBarElement,
+  LineChartElement,
   VelocimeterElement,
   ScatterPlotElement,
   RichContent
@@ -23,6 +24,14 @@ export interface ValidationResult {
   isValid: boolean;
   errors: ValidationError[];
 }
+
+// Mismo formato de longitudes que `options` (ver pdfOptions.ts), más porcentajes, que son lo
+// natural para repartir el ancho de una tabla.
+const COLUMN_WIDTH = /^\d+(?:\.\d+)?\s*(%|px|in|cm|mm)?$/i;
+
+const isValidColumnWidth = (width: unknown): boolean =>
+  (typeof width === 'number' && Number.isFinite(width) && width > 0) ||
+  (typeof width === 'string' && COLUMN_WIDTH.test(width.trim()) && parseFloat(width) > 0);
 
 const isValidRichContent = (item: any): boolean => {
   if (item === null) return true;
@@ -88,6 +97,20 @@ export const validateElements = (elements: any[]): ValidationResult => {
         const table = element as TableElement;
         if (!Array.isArray(table.headers)) {
           elementErrors.push(`${errorPrefix} (${type}): 'headers' must be an array.`);
+        }
+        if (table.column_widths !== undefined) {
+          if (!Array.isArray(table.column_widths)) {
+            elementErrors.push(`${errorPrefix} (${type}): 'column_widths' must be an array.`);
+          } else {
+            if (Array.isArray(table.headers) && table.column_widths.length !== table.headers.length) {
+              elementErrors.push(`${errorPrefix} (${type}): 'column_widths' has ${table.column_widths.length} values but 'headers' has ${table.headers.length}.`);
+            }
+            table.column_widths.forEach((width, widthIndex) => {
+              if (!isValidColumnWidth(width)) {
+                elementErrors.push(`${errorPrefix} (${type}): column_widths[${widthIndex}] must be a percentage ("50%"), a length ("120px", "30mm") or a number of pixels.`);
+              }
+            });
+          }
         }
         if (!Array.isArray(table.rows)) {
           elementErrors.push(`${errorPrefix} (${type}): 'rows' must be an array.`);
@@ -157,6 +180,61 @@ export const validateElements = (elements: any[]): ValidationResult => {
           });
         }
         break;
+
+      case 'line_chart': {
+        const line = element as LineChartElement;
+        const isNum = (v: unknown) => typeof v === 'number' && Number.isFinite(v);
+        if (!line.title) elementErrors.push(`${errorPrefix} (${type}): Missing 'title'.`);
+
+        const labelsOk = Array.isArray(line.labels) && line.labels.length > 0;
+        if (!labelsOk) elementErrors.push(`${errorPrefix} (${type}): 'labels' must be a non-empty array.`);
+
+        if (!Array.isArray(line.series) || line.series.length === 0) {
+          elementErrors.push(`${errorPrefix} (${type}): 'series' must be a non-empty array.`);
+        } else {
+          line.series.forEach((s, i) => {
+            const name = `Series ${i}${typeof s?.name === 'string' ? ` ('${s.name}')` : ''}`;
+            if (!s || typeof s.name !== 'string' || !s.name) elementErrors.push(`${errorPrefix} (${type}): ${name} is missing 'name'.`);
+            if (!Array.isArray(s?.values)) {
+              elementErrors.push(`${errorPrefix} (${type}): ${name} 'values' must be an array.`);
+              return;
+            }
+            if (labelsOk && s.values.length !== line.labels.length) {
+              elementErrors.push(`${errorPrefix} (${type}): ${name} has ${s.values.length} values but 'labels' has ${line.labels.length}.`);
+            }
+            const badIndex = s.values.findIndex((v) => v !== null && !isNum(v));
+            if (badIndex !== -1) elementErrors.push(`${errorPrefix} (${type}): ${name} value ${badIndex} must be a number or null.`);
+            if (s.color !== undefined && typeof s.color !== 'string') elementErrors.push(`${errorPrefix} (${type}): ${name} 'color' must be a string.`);
+            if (s.dashed !== undefined && typeof s.dashed !== 'boolean') elementErrors.push(`${errorPrefix} (${type}): ${name} 'dashed' must be a boolean.`);
+          });
+        }
+
+        if (line.y_axis !== undefined) {
+          const y = line.y_axis;
+          if (typeof y !== 'object' || y === null) {
+            elementErrors.push(`${errorPrefix} (${type}): 'y_axis' must be an object.`);
+          } else {
+            if (y.min !== undefined && !isNum(y.min)) elementErrors.push(`${errorPrefix} (${type}): 'y_axis.min' must be a number.`);
+            if (y.max !== undefined && !isNum(y.max)) elementErrors.push(`${errorPrefix} (${type}): 'y_axis.max' must be a number.`);
+            if (isNum(y.min) && isNum(y.max) && (y.min as number) >= (y.max as number)) elementErrors.push(`${errorPrefix} (${type}): 'y_axis.min' must be lower than 'y_axis.max'.`);
+            if (y.label !== undefined && typeof y.label !== 'string') elementErrors.push(`${errorPrefix} (${type}): 'y_axis.label' must be a string.`);
+          }
+        }
+
+        if (line.bands !== undefined) {
+          if (!Array.isArray(line.bands)) {
+            elementErrors.push(`${errorPrefix} (${type}): 'bands' must be an array.`);
+          } else {
+            line.bands.forEach((b, i) => {
+              if (!b || !isNum(b.from) || !isNum(b.to)) elementErrors.push(`${errorPrefix} (${type}): Band ${i} needs numeric 'from' and 'to'.`);
+              else if (b.from >= b.to) elementErrors.push(`${errorPrefix} (${type}): Band ${i} 'from' must be lower than 'to'.`);
+              if (b?.color !== undefined && typeof b.color !== 'string') elementErrors.push(`${errorPrefix} (${type}): Band ${i} 'color' must be a string.`);
+              if (b?.label !== undefined && typeof b.label !== 'string') elementErrors.push(`${errorPrefix} (${type}): Band ${i} 'label' must be a string.`);
+            });
+          }
+        }
+        break;
+      }
 
       case 'velocimeter':
         const velocimeter = element as VelocimeterElement;

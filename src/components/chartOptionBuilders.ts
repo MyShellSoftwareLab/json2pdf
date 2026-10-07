@@ -1,6 +1,6 @@
 import * as echarts from 'echarts';
 import * as theme from '../theme';
-import { PdfElement } from "../types";
+import { PdfElement, LineChartElement } from "../types";
 import type { BarSeriesOption } from 'echarts';
 import { DIMENSION_ICONS, dimensionIconDataUri, DEPARTMENT_ICONS, departmentIconDataUri } from '../icons';
 
@@ -13,21 +13,24 @@ const severityColor = (value: number): string => {
     return theme.CHART_ERROR;
 };
 
+// Paleta de series (pie, doughnut, stacked bar, line...): 8 colores definidos por el tema
+// (--chart-palette-1..8, ver themes/default.css).
 export const DEFAULT_CHART_COLORS = [
-    theme.CHART_PRIMARY_DARK,
-    theme.CHART_ACCENT_GREEN,
-    theme.CHART_SECONDARY_CYAN,
-    theme.CHART_LIGHT_BLUE,
-    theme.CHART_WARNING,
-    theme.CHART_ERROR,
-
-    // +2 para completar 8 (cuando hay <= 8 items)
-    theme.PRIMARY_400,      // cyan fuerte (marca)
-    theme.SECONDARY_300,    // azul gris medio (diferente al resto)
+    theme.CHART_PALETTE_1,
+    theme.CHART_PALETTE_2,
+    theme.CHART_PALETTE_3,
+    theme.CHART_PALETTE_4,
+    theme.CHART_PALETTE_5,
+    theme.CHART_PALETTE_6,
+    theme.CHART_PALETTE_7,
+    theme.CHART_PALETTE_8,
 ].filter(Boolean) as string[];
 
 export const hexToRgba = (hex: string, alpha = 1) => {
     const h = hex.replace('#', '').trim();
+    // Un tema puede definir un token de color que no es hex (rgb(), nombre CSS...): sin forma
+    // de aplicarle alpha, se devuelve tal cual en vez de generar un color inválido.
+    if (!/^([0-9a-f]{3}|[0-9a-f]{6})$/i.test(h)) return hex;
     const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
     const n = parseInt(full, 16);
     const r = (n >> 16) & 255;
@@ -1070,7 +1073,110 @@ const buildScatterPlot: Builder = (element) => {
     };
 };
 
+/**
+ * line_chart — una o más series sobre ejes categoría (labels) x valor. `null` en `values` deja
+ * un hueco (no se dibuja como 0 ni se une con la línea), cada punto lleva su marcador para que
+ * un mes aislado siga visible, y `bands` pinta franjas horizontales de fondo (markArea).
+ */
+const buildLineChart: Builder = (element) => {
+    const lineElement = element as LineChartElement;
+    const labels = Array.isArray(lineElement.labels) ? lineElement.labels.map((l) => String(l ?? '')) : [];
+    const seriesIn = Array.isArray(lineElement.series) ? lineElement.series : [];
+    const yAxisIn = lineElement.y_axis ?? {};
+    const bands = Array.isArray(lineElement.bands) ? lineElement.bands : [];
+
+    const markArea = bands.length
+        ? {
+            silent: true,
+            data: bands.map((b) => [
+                {
+                    yAxis: b.from,
+                    name: b.label ?? '',
+                    itemStyle: { color: b.color ?? hexToRgba(theme.SURFACE_200, 0.5) },
+                },
+                { yAxis: b.to },
+            ]),
+            label: {
+                show: true,
+                position: 'insideRight' as const,
+                color: theme.SECONDARY_400,
+                fontFamily: theme.FONT_FAMILY,
+                fontSize: 12,
+                fontWeight: 600,
+            },
+        }
+        : undefined;
+
+    const series = seriesIn.map((s, i) => {
+        const color = s.color ?? DEFAULT_CHART_COLORS[i % DEFAULT_CHART_COLORS.length];
+
+        return {
+            name: s.name,
+            type: 'line' as const,
+            // '-' es el "sin dato" explícito de ECharts: con connectNulls false queda un hueco.
+            data: (Array.isArray(s.values) ? s.values : []).map((v) => (v === null || v === undefined ? '-' : v)),
+            connectNulls: false,
+            showSymbol: true,
+            showAllSymbol: true,
+            symbol: 'circle',
+            symbolSize: 8,
+            lineStyle: { color, width: 3, type: s.dashed ? ('dashed' as const) : ('solid' as const) },
+            itemStyle: { color, borderColor: '#ffffff', borderWidth: 2 },
+            emphasis: { disabled: true },
+            // Franjas solo en la primera serie (si no se pintarían una vez por serie).
+            ...(i === 0 && markArea ? { markArea } : {}),
+        };
+    });
+
+    const AXIS_LINE = hexToRgba(theme.SECONDARY_600, 0.35);
+    const hasLegend = series.some((s) => s.name);
+
+    return {
+        backgroundColor: 'transparent',
+        textStyle: { fontFamily: theme.FONT_FAMILY },
+        tooltip: { show: false },
+
+        legend: {
+            show: hasLegend,
+            top: 4,
+            left: 'center',
+            itemWidth: 34,
+            itemHeight: 12,
+            itemGap: 24,
+            textStyle: { color: theme.SECONDARY_700, fontFamily: theme.FONT_FAMILY, fontSize: 14, fontWeight: 600 },
+        },
+
+        grid: { left: 12, right: 24, top: hasLegend ? 64 : 36, bottom: 16, containLabel: true },
+
+        xAxis: {
+            type: 'category',
+            data: labels,
+            boundaryGap: false,
+            axisTick: { show: false },
+            axisLine: { lineStyle: { color: AXIS_LINE, width: 2 } },
+            axisLabel: { color: theme.SECONDARY_600, fontFamily: theme.FONT_FAMILY, fontSize: 13, fontWeight: 500, margin: 12, interval: 0, hideOverlap: false },
+        },
+
+        yAxis: {
+            type: 'value',
+            min: yAxisIn.min,
+            max: yAxisIn.max,
+            name: yAxisIn.label ?? '',
+            nameLocation: 'end',
+            nameGap: 14,
+            nameTextStyle: { color: theme.SECONDARY_700, fontFamily: theme.FONT_FAMILY, fontSize: 14, fontWeight: 700, align: 'left' },
+            axisTick: { show: false },
+            axisLine: { show: false },
+            axisLabel: { color: theme.SECONDARY_600, fontFamily: theme.FONT_FAMILY, fontSize: 13, fontWeight: 500 },
+            splitLine: { lineStyle: { color: hexToRgba(theme.PRIMARY_500, 0.25), type: 'dashed' } },
+        },
+
+        series,
+    } as Opt;
+};
+
 const builders: Record<string, Builder> = {
+    line_chart: buildLineChart,
     bar_chart: buildBarChart,
     horizontal_bar: buildHorizontalBar,
     pie_chart: buildPieChart,

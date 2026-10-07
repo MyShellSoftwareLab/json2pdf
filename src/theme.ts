@@ -1,159 +1,156 @@
 // =============================================================================
-// THEME TOKENS — neutral default palette (Tailwind blue / slate / gray). Swap these
-// values to re-brand every element of the report.
+// THEME TOKENS
+//
+// Los valores NO viven aquí: vienen del tema CSS (themes/default.css + el tema elegido, ver
+// services/themes.ts). El servidor inyecta el CSS del tema en la página antes de que cargue
+// este módulo (ver apply-theme.ts), y aquí se lee cada token como variable CSS
+// (`PRIMARY_500` <-> `--primary-500`). Sin tema en la página (ej. la librería usada desde otra
+// app), se usan los valores de themes/default.css empaquetados en el build.
+//
+// Los nombres exportados no cambian, así que los componentes siguen usando `theme.X` igual
+// (v-bind en CSS y constantes en los builders de ECharts).
 // =============================================================================
-// Primary colors (Tailwind blue) -> Title color / acentos
-export const PRIMARY_50 = "#EFF6FF";
-export const PRIMARY_100 = "#DBEAFE";
-export const PRIMARY_200 = "#BFDBFE";
-export const PRIMARY_300 = "#93C5FD";
-export const PRIMARY_400 = "#60A5FA";
-export const PRIMARY_500 = "#3B82F6"; // main accent
-export const PRIMARY_600 = "#2563EB"; // hover
-export const PRIMARY_700 = "#1D4ED8"; // active
+import defaultThemeCss from '../themes/default.css?raw';
 
+const toVar = (name: string) => `--${name.toLowerCase().replace(/_/g, '-')}`;
 
-// Secondary colors (Tailwind slate, dark-weighted) -> Subtitle color
-export const SECONDARY_50 = "#F8FAFC";
-export const SECONDARY_100 = "#F1F5F9";
-export const SECONDARY_200 = "#E2E8F0";
-export const SECONDARY_300 = "#94A3B8"; // slate-400
-export const SECONDARY_400 = "#64748B"; // slate-500
-export const SECONDARY_500 = "#334155"; // slate-700 (main)
-export const SECONDARY_600 = "#1E293B"; // slate-800
-export const SECONDARY_700 = "#172033";
-export const SECONDARY_800 = "#0F172A"; // slate-900
-export const SECONDARY_900 = "#020617"; // slate-950
+const parseTokens = (css: string): Record<string, string> => {
+    const tokens: Record<string, string> = {};
+    for (const match of css.matchAll(/(--[a-z0-9-]+)\s*:\s*([^;]+);/gi)) tokens[match[1]] = match[2].trim();
+    return tokens;
+};
 
+const DEFAULTS = parseTokens(defaultThemeCss);
 
-// Surface colors (Tailwind gray) -> fondos, bordes y texto neutro
-export const SURFACE_0 = "#ffffff";
-export const SURFACE_50 = "#F9FAFB";
-export const SURFACE_100 = "#F3F4F6";
-export const SURFACE_200 = "#E5E7EB";
-export const SURFACE_300 = "#9CA3AF";
-export const SURFACE_400 = "#6B7280";
-export const SURFACE_500 = "#64748B";
-export const SURFACE_600 = "#4B5563";
-export const SURFACE_700 = "#374151";
-export const SURFACE_800 = "#1F2937";
-export const SURFACE_900 = "#111827";
-export const SURFACE_950 = "#030712";
+// Resuelve `var(--x)` contra los defaults (para el fallback sin tema en la página).
+const resolveDefault = (value: string, depth = 0): string =>
+    depth > 10 ? value : value.replace(/var\((--[a-z0-9-]+)\)/gi, (_, ref) => resolveDefault(DEFAULTS[ref] ?? '', depth + 1));
 
+const pageStyle = typeof document !== 'undefined' && typeof getComputedStyle === 'function'
+    ? getComputedStyle(document.documentElement)
+    : null;
 
-// =============================================================================
-// SEMANTIC COLOR ALIASES
-// =============================================================================
-export const PRIMARY_DARK = PRIMARY_700;
+/** Valor de un token: el del tema aplicado en la página, o el default. */
+export const token = (name: string): string => {
+    const cssVar = toVar(name);
+    return pageStyle?.getPropertyValue(cssVar).trim() || resolveDefault(DEFAULTS[cssVar] ?? '');
+};
 
-// Text colors
-export const TEXT_PRIMARY = SURFACE_950;     // paragraph
-export const TEXT_SECONDARY = SECONDARY_700;   // subtitles/headings
-export const TEXT_MUTED = SURFACE_600;
+const num = (name: string): number => Number(token(name));
 
-// Spacing scale (4px base)
-export const SPACE_1 = "4px";
-export const SPACE_2 = "8px";
-export const SPACE_3 = "12px";
-export const SPACE_4 = "16px";
-export const SPACE_6 = "24px";
-export const SPACE_8 = "32px";
-export const SPACE_10 = "40px";
+// Colores base
+export const PRIMARY_50 = token('PRIMARY_50');
+export const PRIMARY_100 = token('PRIMARY_100');
+export const PRIMARY_200 = token('PRIMARY_200');
+export const PRIMARY_300 = token('PRIMARY_300');
+export const PRIMARY_400 = token('PRIMARY_400');
+export const PRIMARY_500 = token('PRIMARY_500');
+export const PRIMARY_600 = token('PRIMARY_600');
+export const PRIMARY_700 = token('PRIMARY_700');
+export const SECONDARY_50 = token('SECONDARY_50');
+export const SECONDARY_100 = token('SECONDARY_100');
+export const SECONDARY_200 = token('SECONDARY_200');
+export const SECONDARY_300 = token('SECONDARY_300');
+export const SECONDARY_400 = token('SECONDARY_400');
+export const SECONDARY_500 = token('SECONDARY_500');
+export const SECONDARY_600 = token('SECONDARY_600');
+export const SECONDARY_700 = token('SECONDARY_700');
+export const SECONDARY_800 = token('SECONDARY_800');
+export const SECONDARY_900 = token('SECONDARY_900');
+export const SURFACE_0 = token('SURFACE_0');
+export const SURFACE_50 = token('SURFACE_50');
+export const SURFACE_100 = token('SURFACE_100');
+export const SURFACE_200 = token('SURFACE_200');
+export const SURFACE_300 = token('SURFACE_300');
+export const SURFACE_400 = token('SURFACE_400');
+export const SURFACE_500 = token('SURFACE_500');
+export const SURFACE_600 = token('SURFACE_600');
+export const SURFACE_700 = token('SURFACE_700');
+export const SURFACE_800 = token('SURFACE_800');
+export const SURFACE_900 = token('SURFACE_900');
+export const SURFACE_950 = token('SURFACE_950');
+export const PRIMARY_DARK = token('PRIMARY_DARK');
 
-// Radius scale
-export const RADIUS_SM = "8px";
-export const RADIUS_MD = "12px";
-export const RADIUS_LG = "14px";
-export const RADIUS_XL = "18px";
-export const RADIUS_FULL = "9999px";
+// Texto
+export const TEXT_PRIMARY = token('TEXT_PRIMARY');
+export const TEXT_SECONDARY = token('TEXT_SECONDARY');
+export const TEXT_MUTED = token('TEXT_MUTED');
 
-// =============================================================================
-// TYPOGRAPHY (REPORT-like hierarchy)
-// =============================================================================
+// Espaciado y radios
+export const SPACE_1 = token('SPACE_1');
+export const SPACE_2 = token('SPACE_2');
+export const SPACE_3 = token('SPACE_3');
+export const SPACE_4 = token('SPACE_4');
+export const SPACE_6 = token('SPACE_6');
+export const SPACE_8 = token('SPACE_8');
+export const SPACE_10 = token('SPACE_10');
+export const RADIUS_SM = token('RADIUS_SM');
+export const RADIUS_MD = token('RADIUS_MD');
+export const RADIUS_LG = token('RADIUS_LG');
+export const RADIUS_XL = token('RADIUS_XL');
+export const RADIUS_FULL = token('RADIUS_FULL');
 
-export const FONT_FAMILY = "'Inter', 'Helvetica', 'Arial', sans-serif";
-// Más parecido a la portada del ejemplo
-// Ajuste de tipografía
-export const FONT_SIZE_TITLE = "28px";
-export const FONT_SIZE_SUBTITLE = "22px";
-export const FONT_SIZE_BODY = "16px";
+// Tipografía
+export const FONT_FAMILY = token('FONT_FAMILY');
+export const FONT_SIZE_TITLE = token('FONT_SIZE_TITLE');
+export const FONT_SIZE_SUBTITLE = token('FONT_SIZE_SUBTITLE');
+export const FONT_SIZE_BODY = token('FONT_SIZE_BODY');
+export const LINE_HEIGHT_TITLE = token('LINE_HEIGHT_TITLE');
+export const LINE_HEIGHT_SUBTITLE = token('LINE_HEIGHT_SUBTITLE');
+export const LINE_HEIGHT_BODY = token('LINE_HEIGHT_BODY');
+export const FONT_WEIGHT_REGULAR = num('FONT_WEIGHT_REGULAR');
+export const FONT_WEIGHT_MEDIUM = num('FONT_WEIGHT_MEDIUM');
+export const FONT_WEIGHT_SEMIBOLD = num('FONT_WEIGHT_SEMIBOLD');
+export const FONT_WEIGHT_BOLD = num('FONT_WEIGHT_BOLD');
+export const FONT_WEIGHT_EXTRABOLD = num('FONT_WEIGHT_EXTRABOLD');
 
-export const LINE_HEIGHT_TITLE = "1.1";
-export const LINE_HEIGHT_SUBTITLE = "1.2";
-export const LINE_HEIGHT_BODY = "1.4";
+// Tablas
+export const TABLE_HEADER_BG = token('TABLE_HEADER_BG');
+export const TABLE_HEADER_TEXT = token('TABLE_HEADER_TEXT');
+export const TABLE_BORDER = token('TABLE_BORDER');
+export const TABLE_ROW_ALT = token('TABLE_ROW_ALT');
 
-export const FONT_WEIGHT_REGULAR = 400;
-export const FONT_WEIGHT_MEDIUM = 500;
-export const FONT_WEIGHT_SEMIBOLD = 600;
-export const FONT_WEIGHT_BOLD = 700;
-export const FONT_WEIGHT_EXTRABOLD = 800;
+// Secciones
+export const SECTION_BG_DEFAULT = token('SECTION_BG_DEFAULT');
+export const SECTION_RADIUS = token('SECTION_RADIUS');
+export const SECTION_PADDING_Y = token('SECTION_PADDING_Y');
+export const SECTION_PADDING_X = token('SECTION_PADDING_X');
 
-// =============================================================================
-// TABLE TOKENS (clean, airy)
-// =============================================================================
-export const TABLE_HEADER_BG = SURFACE_100;
-export const TABLE_HEADER_TEXT = SURFACE_700;
-export const TABLE_BORDER = SURFACE_200;
-export const TABLE_ROW_ALT = SURFACE_50;
+// Charts y severidad
+export const CHART_TITLE_COLOR = token('CHART_TITLE_COLOR');
+export const CHART_TITLE_FONT_SIZE = token('CHART_TITLE_FONT_SIZE');
+export const CHART_TITLE_2_FONT_SIZE = token('CHART_TITLE_2_FONT_SIZE');
+export const CHART_SUBTITLE_FONT_SIZE = token('CHART_SUBTITLE_FONT_SIZE');
+export const CHART_PRIMARY_DARK = token('CHART_PRIMARY_DARK');
+export const CHART_ACCENT_GREEN = token('CHART_ACCENT_GREEN');
+export const CHART_SECONDARY_CYAN = token('CHART_SECONDARY_CYAN');
+export const CHART_LIGHT_BLUE = token('CHART_LIGHT_BLUE');
+export const CHART_SUCCESS = token('CHART_SUCCESS');
+export const CHART_WARNING = token('CHART_WARNING');
+export const CHART_ERROR = token('CHART_ERROR');
+export const CHART_PALETTE_1 = token('CHART_PALETTE_1');
+export const CHART_PALETTE_2 = token('CHART_PALETTE_2');
+export const CHART_PALETTE_3 = token('CHART_PALETTE_3');
+export const CHART_PALETTE_4 = token('CHART_PALETTE_4');
+export const CHART_PALETTE_5 = token('CHART_PALETTE_5');
+export const CHART_PALETTE_6 = token('CHART_PALETTE_6');
+export const CHART_PALETTE_7 = token('CHART_PALETTE_7');
+export const CHART_PALETTE_8 = token('CHART_PALETTE_8');
+export const ACCENT_SUCCESS = token('ACCENT_SUCCESS');
+export const ACCENT_ERROR = token('ACCENT_ERROR');
+export const ACCENT_WARNING = token('ACCENT_WARNING');
+export const RADAR_LABEL_COLOR = token('RADAR_LABEL_COLOR');
 
-// =============================================================================
-// SECTION / CARD DEFAULTS (for light-blue panels like REPORT)
-// =============================================================================
+// Metric hero
+export const HERO_GRADIENT_START = token('HERO_GRADIENT_START');
+export const HERO_GRADIENT_END = token('HERO_GRADIENT_END');
+export const HERO_MUTED = token('HERO_MUTED');
+export const HERO_DANGER = token('HERO_DANGER');
 
-export const SECTION_BG_DEFAULT = PRIMARY_50;
-export const SECTION_RADIUS = "48px";
-export const SECTION_PADDING_Y = "48px";
-export const SECTION_PADDING_X = "48px";
-
-// =============================================================================
-// CHART'S SECTION
-// =============================================================================
-
-// Chart title color
-export const CHART_TITLE_COLOR = SECONDARY_600;
-
-// CHART STYLES
-
-export const CHART_TITLE_FONT_SIZE = "30px";
-export const CHART_TITLE_2_FONT_SIZE = "26px";
-export const CHART_SUBTITLE_FONT_SIZE = "24px";
-
-export const CHART_PRIMARY_DARK = SECONDARY_600;
-export const CHART_ACCENT_GREEN = "#10B981";
-export const CHART_SECONDARY_CYAN = PRIMARY_200;
-export const CHART_LIGHT_BLUE = PRIMARY_600;
-
-// Semáforo de severidad (Tailwind emerald/amber/rose).
-export const CHART_SUCCESS = "#10B981";
-export const CHART_WARNING = "#F59E0B";
-export const CHART_ERROR = "#F43F5E";
-
-// Accent colors for status/feedback
-export const ACCENT_SUCCESS = CHART_SUCCESS;
-export const ACCENT_ERROR = CHART_ERROR;
-export const ACCENT_WARNING = CHART_WARNING;
-
-
-// Radar specific helpers
-export const RADAR_LABEL_COLOR = PRIMARY_600;
-
-// =============================================================================
-// METRIC HERO — tarjeta oscura de la variante "hero" de `metric` (ver Metric.vue).
-// =============================================================================
-export const HERO_GRADIENT_START = SECONDARY_800;
-export const HERO_GRADIENT_END = PRIMARY_700;
-export const HERO_MUTED = "#94A3B8"; // slate-400 — labels pequeños
-export const HERO_DANGER = "#FB7185"; // rose-400 — valores en riesgo
-
-// =============================================================================
-// HEATMAP DE CELDA (tabla de departamentos) — a diferencia de la píldora de severidad
-// (ACCENT_SUCCESS/WARNING/ERROR, fondo saturado + texto blanco), esto es fondo claro +
-// texto oscuro del mismo tono, pensado para pintar la celda COMPLETA sin que se vea pesado
-// en una tabla con muchas columnas.
-// =============================================================================
-export const HEATMAP_SUCCESS_BG = "#D1FAE5"; // emerald-100
-export const HEATMAP_SUCCESS_TEXT = "#047857"; // emerald-700
-export const HEATMAP_WARNING_BG = "#FEF3C7"; // amber-100
-export const HEATMAP_WARNING_TEXT = "#B45309"; // amber-700
-export const HEATMAP_ERROR_BG = "#FFE4E6"; // rose-100
-export const HEATMAP_ERROR_TEXT = "#BE123C"; // rose-700
+// Heatmap de celda
+export const HEATMAP_SUCCESS_BG = token('HEATMAP_SUCCESS_BG');
+export const HEATMAP_SUCCESS_TEXT = token('HEATMAP_SUCCESS_TEXT');
+export const HEATMAP_WARNING_BG = token('HEATMAP_WARNING_BG');
+export const HEATMAP_WARNING_TEXT = token('HEATMAP_WARNING_TEXT');
+export const HEATMAP_ERROR_BG = token('HEATMAP_ERROR_BG');
+export const HEATMAP_ERROR_TEXT = token('HEATMAP_ERROR_TEXT');

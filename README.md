@@ -10,10 +10,10 @@ Send titles, paragraphs, tables, metrics, charts, or raw HTML styled with **Tail
 ## Features
 
 - **JSON in, PDF out.** One endpoint: `POST /api/generate-pdf`.
-- **Built-in elements:** cover page, titles, paragraphs, lists, tables (with badges, progress bars and heatmap cells), metric cards, and charts (bar, pie, doughnut, radar, horizontal bar, stacked bar, gauge, scatter), all rendered with ECharts.
+- **Built-in elements:** cover page, titles, paragraphs, lists, tables (with badges, progress bars and heatmap cells), metric cards, and charts (bar, line, pie, doughnut, radar, horizontal bar, stacked bar, gauge, scatter), all rendered with ECharts.
 - **HTML + Tailwind CSS:** the `html` element accepts any HTML with Tailwind v4 classes (grid, flex, tables, gradients, arbitrary values like `w-[120px]`). Only the classes you use are compiled, and they never leak into the other elements.
 - **Page control:** page size, orientation, margins, scale, page numbers, custom header/footer, PDF title and bookmarks (see [PDF options](#pdf-options)), plus `page_break` elements and automatic page breaks before each `title`.
-- **Themeable:** the whole palette and typography live in `src/theme.ts`.
+- **Themes:** the whole look (colors, fonts, radius, decorative shapes) lives in plain CSS files. Pick one per request with `"theme": "blue"`, or add your own (see [Themes](#themes)).
 - **Validation:** malformed payloads get a `400` with a per-element list of what's wrong.
 
 ---
@@ -72,6 +72,7 @@ Everything in `options` is optional. Without it you get the default: A4 portrait
 | `pageNumbers` | boolean or object | `false` | `true` prints "Page N of M" centered in the footer. Customize it with `{ "format": "Página {page} de {total}", "align": "left\|center\|right", "position": "footer\|header" }`. |
 | `headerTemplate`, `footerTemplate` | HTML string | none | A custom header/footer on every page (see below). Takes priority over `pageNumbers` on the same side. |
 | `title` | string | `"Report"` | PDF document title, shown in PDF viewers' title bars. |
+| `theme` | string | `"default"` | Visual theme: `default`, `blue`, or any theme added to `themes/` (see [Themes](#themes)). `GET /api/themes` lists them. |
 | `outline` | boolean | `false` | Add PDF bookmarks generated from the document's headings (cover, `title` elements, and headings inside `html` elements). |
 | `filename` | string | `"report"` | Download filename. `.pdf` is added automatically, and unsafe characters are removed. |
 | `disposition` | string | `"attachment"` | `"inline"` makes browsers open the PDF instead of downloading it. |
@@ -102,6 +103,49 @@ Charts, the cover page and the HTML elements adapt to the printable area, so a l
 Things to keep in mind:
 - Header and footer HTML doesn't load external CSS, fonts or Tailwind. Use inline `style` attributes, and always set a `font-size`, since the default is tiny.
 - They're drawn inside the top and bottom margins. When a header or footer is on, that margin defaults to `48px`; set a bigger margin if your template needs more room.
+
+### Themes
+
+Every element's look comes from a **theme**: a CSS file in the `themes/` folder. Choose one per PDF:
+
+```json
+{ "elements": [ ... ], "options": { "theme": "blue" } }
+```
+
+Try them on the full sample document: [`/design-preview?theme=default`](https://json2pdf.guss.uk/design-preview?theme=default) and [`/design-preview?theme=blue`](https://json2pdf.guss.uk/design-preview?theme=blue). Other options combine too, e.g. `/design-preview?theme=blue&landscape=true`.
+
+| Theme | Look |
+|---|---|
+| `default` | Monochrome: dark grays on a white page for text, tables and charts. The only color is the severity green / amber / red, in quieter dark tones. |
+| `blue` | Blue on blue: deep-blue cover with large circles, a gradient pill under titles, dots before subtitles, blue charts and tables on rounded cards. |
+
+#### Creating a theme
+
+On a self-hosted instance, add a file to `themes/` (e.g. `themes/forest.css`) and request `"theme": "forest"`. No restart or rebuild is needed. `themes/default.css` is always loaded first and your theme on top of it, so a theme only declares what it changes. A theme can do two things:
+
+1. **Override design tokens.** These are CSS variables that every element and chart reads: colors (`--primary-50` … `--primary-700`, `--secondary-*`, `--surface-*`, `--chart-success`, `--chart-palette-1` … `--chart-palette-8` for chart series, `--heatmap-*`…), typography (`--font-family`, `--font-size-title`, `--font-weight-bold`…), spacing and radius (`--space-*`, `--radius-*`). See `themes/default.css` for the full list.
+
+   ```css
+   :root {
+     --primary-500: #16A34A;
+     --secondary-500: #14532D;
+     --radius-md: 4px;
+   }
+   ```
+
+2. **Restyle elements with regular CSS rules.** Prefix selectors with `.pdf` so they win over the elements' built-in styles:
+
+   ```css
+   .pdf .el-title { text-transform: uppercase; }
+   .pdf .cover { background: #14532D; }
+   ```
+
+   Useful classes: `.cover` (and `.cover__title`, `__subtitle`, `__badge`, `__footer`), `.el-title`, `.el-subtitle`, `.el-table`, `.metric`, `.chart-block--simple`, `.panel`. Inspect `/design-preview-html?theme=<name>` with browser devtools to find others.
+
+Things to keep in mind:
+- **Colors used by charts must be hex** (`#RRGGBB`). Charts derive transparent tints from them.
+- **Custom fonts:** set `--font-family` and load the font with an `@import` or `@font-face` at the top of the theme. Rendering waits until fonts finish loading.
+- **Names** may only use letters, numbers, `-` and `_`. Unknown names return a `400` listing the available themes.
 
 ### Examples
 
@@ -155,7 +199,8 @@ For a self-hosted instance, replace `https://json2pdf.guss.uk` with your own URL
 |---|---|
 | `GET /` | This documentation, rendered from `README.md` |
 | `GET /design-preview` | A PDF with one of every element type, so you can see what's available. It accepts [PDF options](#pdf-options) as query parameters, e.g. `/design-preview?format=Letter&landscape=true&margin=15mm&pageNumbers=true`. |
-| `GET /design-preview-html` | The same document as HTML, before it's printed, to inspect with browser devtools |
+| `GET /design-preview-html` | The same document as HTML, before it's printed, to inspect with browser devtools. Accepts `?theme=` too. |
+| `GET /api/themes` | The available themes, e.g. `{ "themes": ["default", "blue"] }` |
 
 ---
 
@@ -169,7 +214,7 @@ Every element is an object with a `type`. Text fields (`content`, `subtitle`, �
 |---|---|
 | `cover_page` | `{"type":"cover_page","title":"...","subtitle":"...","badge":"...","footer":"...","logo":"https://... or data:image/..."}`. Full-page cover; only `title` is required. `title` can also be an array of lines: `[{"text":"Annual"},{"text":"Report","accent":true}]`. |
 | `title` | `{"type":"title","content":"..."}`. Starts a new page, unless it's the first element or follows the cover. |
-| `subtitle` | `{"type":"subtitle","content":"..."}` |
+| `subtitle` | `{"type":"subtitle","content":"..."}`. Stays on the same page as the element after it, so it's never left alone at the bottom of a page. |
 | `paragraph` | `{"type":"paragraph","content":"..."}` |
 | `numbered_list` | `{"type":"numbered_list","items":["...","..."]}` |
 | `bullet_points` | `{"type":"bullet_points","items":["...","..."]}` |
@@ -198,6 +243,19 @@ Every element is an object with a `type`. Text fields (`content`, `subtitle`, �
 }
 ```
 
+By default the first column takes 22% of the width and the others split the rest evenly. Set `column_widths` to choose them, one per header:
+
+```json
+{
+  "type": "table",
+  "headers": ["Code", "Finding", "Pest", "Date"],
+  "column_widths": ["18%", "40%", "22%", "20%"],
+  "rows": [["ACC10001", "Gap in the wall next to the loading dock door", "Rats", "18/09/2026"]]
+}
+```
+
+Each width is a percentage (`"40%"`), a length (`"120px"`, `"30mm"`, same units as [lengths](#pdf-options)) or a number of pixels. It must have as many values as `headers`. Long words only wrap when they don't fit, so give short codes and dates enough room.
+
 A cell can be any of these:
 - a string, a number, or `null`
 - a badge: `{ "text", "severity": "success|warning|info|error", "variant": "outline|solid|soft", "cellFill": true }`. `cellFill` colors the whole cell.
@@ -224,8 +282,39 @@ Tables with no rows aren't rendered.
 | `radar_chart` | `{"type":"radar_chart","title":"...","labels":["..."],"values":[1],"max":100}` |
 | `horizontal_bar` | `{"type":"horizontal_bar","title":"...","labels":["..."],"values":[1],"max":100}`. Optional `"variant":"severity_list"` with `iconKeys` and `legend`. |
 | `stacked_bar` | `{"type":"stacked_bar","title":"...","data":[{"label":"Jan","values":{"A":1,"B":2}}]}` |
+| `line_chart` | `{"type":"line_chart","title":"...","labels":["..."],"series":[{"name":"...","values":[1,null]}]}`. See [Line chart](#line-chart) below for axis, colors, dashes and bands. |
 | `velocimeter` | `{"type":"velocimeter","title":"...","value":7,"min":0,"max":10}` (gauge) |
 | `scatter_plot` | `{"type":"scatter_plot","title":"...","x_axis":"...","y_axis":"...","positions":[{"label":"...","x":1,"y":1}]}` |
+
+#### Line chart
+
+```json
+{
+  "type": "line_chart",
+  "title": "Year-over-year risk",
+  "labels": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+  "series": [
+    { "name": "2026", "values": [97, 96, 94.85, 92.5, 90, 87.5, 85, 82.5, 80, 77.5, null, null], "color": "#2563EB" },
+    { "name": "2025", "values": [null, null, null, null, null, null, null, null, null, null, 99, 98], "color": "#9CA3AF", "dashed": true }
+  ],
+  "y_axis": { "min": 0, "max": 100, "label": "Risk" },
+  "bands": [
+    { "from": 0, "to": 30, "color": "#E8F6EC", "label": "Low" },
+    { "from": 30, "to": 60, "color": "#FFF6DB", "label": "Medium" },
+    { "from": 60, "to": 100, "color": "#FDECEE", "label": "High" }
+  ]
+}
+```
+
+| Field | Required | Description |
+|---|---|---|
+| `labels` | yes | X-axis categories. |
+| `series` | yes | One or more lines. Each has a `name` (shown in the legend) and `values`, which must have the same length as `labels`. Optional: `color` (defaults to the theme palette) and `dashed: true`. |
+| `values[i]` = `null` | | No data for that point. It leaves a gap instead of being drawn as 0 or joined across. Every point has a dot, so a single isolated value is still visible. |
+| `y_axis` | no | `{ "min", "max", "label" }`. Fix the scale (e.g. 0–100) so charts are comparable; without it the axis scales to the data. `label` is the axis name. |
+| `bands` | no | Colored horizontal zones behind the lines, e.g. traffic-light levels: `{ "from", "to", "color", "label" }`. The label is drawn at the right edge of each band. |
+
+A `400` lists every problem, e.g. `Series 0 ('2026') has 10 values but 'labels' has 12.`
 
 ### Scorecard elements
 
@@ -380,7 +469,7 @@ npm start          # builds the render app, then runs the API with nodemon + ts-
 
 ### Theming
 
-Colors, fonts and spacing live in `src/theme.ts`. The default palette uses Tailwind's blue (primary), slate (secondary) and gray (surface). Change the values there to re-brand every element at once.
+Themes are CSS files in `themes/` (see [Themes](#themes)). Inside the code, components and chart builders read the tokens through `src/theme.ts` (`theme.PRIMARY_500` ↔ `--primary-500`), so new styles should use a token rather than a hardcoded value. To add a token, declare it in `themes/default.css` and export it from `src/theme.ts`.
 
 ### Adding an element
 
@@ -399,15 +488,18 @@ src/
 │   ├── pdfGenerator.ts         Puppeteer: loads dist-app, injects data, prints the PDF
 │   ├── pdfOptions.ts           Validates `options` (page size, margins, header/footer…)
 │   ├── tailwind.ts             Compiles Tailwind CSS for `html` elements
+│   ├── themes.ts               Lists and loads theme files
 │   └── validator.ts            Per-element payload validation
 ├── components/
 │   ├── Elements.vue            Maps each element type to its component, handles page breaks
 │   ├── chartOptionBuilders.ts  ECharts options per chart type
 │   └── elements/               One Vue component per element
 ├── render-app.ts               Browser entry for the render page
-├── theme.ts                    Design tokens
+├── theme.ts                    Reads the design tokens from the active theme
+├── apply-theme.ts              Injects the theme CSS into the render page
 ├── types.ts                    Element type definitions
 └── data/elementsOneOfEach.ts   Design-preview sample
+themes/                         Theme CSS files (default.css, blue.css, …)
 ecosystem.config.js             pm2 config
 ```
 
