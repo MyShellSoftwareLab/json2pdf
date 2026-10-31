@@ -7,11 +7,13 @@ module.exports = {
             cwd: __dirname,
             instances: 1,
             exec_mode: 'fork',
-            // Cada PDF abre su propio Chromium; reinicia si la memoria se dispara.
-            max_memory_restart: '1G',
+            // Esperar el apagado ordenado (cierra el Chromium compartido, ver server.ts).
+            kill_timeout: 12000,
             env: {
                 NODE_ENV: 'production',
                 PORT: 8003,
+                // PDF_CONCURRENCY: 2,        // renders simultáneos (ver README, "Tuning")
+                // PDF_BROWSER_IDLE_MS: 60000,
             },
         },
     ],

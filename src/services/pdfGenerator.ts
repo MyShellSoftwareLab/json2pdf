@@ -1,9 +1,9 @@
-import puppeteer from 'puppeteer';
 import * as path from 'path';
 import { PdfElement } from '../types';
 import { buildTailwindCss } from './tailwind';
 import { resolvePdfOptions, ResolvedPdfOptions } from './pdfOptions';
 import { loadThemeCss } from './themes';
+import { withBrowserContext } from './browserPool';
 
 export const generatePdf = async (elements: PdfElement[], options?: ResolvedPdfOptions): Promise<Buffer> => {
     const appPath = path.resolve(__dirname, '../../dist-app/index.html');
@@ -11,13 +11,9 @@ export const generatePdf = async (elements: PdfElement[], options?: ResolvedPdfO
     const { pdf: pdfOptions, viewport, title, theme } = options ?? resolvePdfOptions(undefined).options;
     const themeCss = loadThemeCss(theme);
 
-    const browser = await puppeteer.launch({
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--allow-file-access-from-files', '--enable-local-file-accesses'],
-        headless: true,
-    });
-
-    try {
-        const page = await browser.newPage();
+    // Navegador compartido + contexto aislado por request (ver browserPool.ts).
+    return withBrowserContext(async (context) => {
+        const page = await context.newPage();
 
         // Viewport = área imprimible de la hoja (página - márgenes, / scale; ver pdfOptions.ts).
         // Sin esto Puppeteer renderiza a 800x600: los charts (ECharts mide su contenedor al
@@ -44,8 +40,5 @@ export const generatePdf = async (elements: PdfElement[], options?: ResolvedPdfO
         const pdf = await page.pdf(pdfOptions);
 
         return Buffer.from(pdf);
-    } finally {
-        // Siempre cerrar Chromium, también si el render falla (si no, queda el proceso vivo).
-        await browser.close();
-    }
+    });
 };

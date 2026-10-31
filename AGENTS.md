@@ -50,6 +50,7 @@ With the server running:
 src/
   server.ts / app.ts        Express entry + routes
   services/pdfGenerator.ts  Puppeteer: viewport = printable area, file:// load, waits RENDER_COMPLETE, prints
+  services/browserPool.ts   One shared Chromium (headless shell), an isolated BrowserContext per request, concurrency queue, idle close/relaunch. server.ts shuts it down on SIGTERM/SIGINT
   services/pdfOptions.ts    Validates/normalizes the payload's `options` (format, margins, header/footer, ...) -> Puppeteer PDFOptions + viewport
   services/validator.ts     Per-type payload validation (switch on element.type)
   types.ts                  PdfElement discriminated union + all element interfaces
@@ -92,6 +93,7 @@ Keep these places in sync:
 - **Language**: code identifiers are English. Many code comments and sample report text are Spanish, so match the language of the surrounding comments.
 - **`html` element (Tailwind)**: `services/tailwind.ts` compiles Tailwind v4 server-side per report, using the `class` attributes of every `html` element as candidates. The preflight reset and utilities are wrapped in `@scope (.el-html)`, so they only touch that element's content. The CSS reaches the page as `window.__PDF_TAILWIND_CSS__` (injected by `pdfGenerator.ts` and `/design-preview-html`, applied in `render-app.ts`). `HtmlContent.vue` sanitizes with DOMPurify. Keep both the scoping and the sanitizing: Puppeteer runs with file:// access.
 - **PDF options**: `resolvePdfOptions()` in `services/pdfOptions.ts` turns the payload's optional `options` (including `theme`) into Puppeteer `PDFOptions` plus a viewport equal to the printable area ((page − margins) / scale). The cover's `min-height: 100vh` and chart widths depend on that, so don't hardcode page dimensions anywhere. New options need validation there, a row in the README's "PDF options" table, and they also work as `/design-preview` query params via `optionsFromQuery()` in `app.ts`.
+- **Chromium lifecycle**: never `puppeteer.launch()` per request; go through `withBrowserContext()` in `services/browserPool.ts`. Puppeteer's own signal handlers are disabled on purpose (with them, SIGTERM closed Chromium but Node kept running); `server.ts` handles shutdown. When testing with a separate server, stop it by PID and check no `chrome-headless-shell` processes are left.
 - **Cover logo**: `cover_page` takes an optional `logo` (URL or data URI). No logo is bundled.
 - **Library surface**: changes to `src/index.ts`, `types.ts` or `theme.ts` affect downstream consumers via `dist/` types. Keep exports backward compatible.
 

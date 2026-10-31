@@ -359,7 +359,7 @@ Icon keys used by these elements:
 - **Node.js 20.19+** (22 LTS recommended) and npm
 - **Linux server** (Ubuntu/Debian examples below) with the system libraries Chromium needs
 - Outbound internet access while rendering, to load the Inter font from Google Fonts. Without it, PDFs fall back to Helvetica/Arial.
-- Around **300–500 MB of RAM per PDF being rendered**, since each request launches its own Chromium
+- **RAM:** about **250–320 MB while rendering** and ~40 MB idle. Requests share one Chromium (each in an isolated context) and at most 2 render at a time, so a burst of requests queues instead of piling up. Measured peak: 404 MB with 3 requests for the 22-page preview at once. **1 vCPU and 1 GB of RAM** is enough; 2 GB gives headroom (see [Tuning](#tuning))
 
 ### 1. Install
 
@@ -409,7 +409,19 @@ pm2 save                        # remember the process list
 pm2 startup                     # print the command that starts pm2 on boot, then run it
 ```
 
-`ecosystem.config.js` sets `PORT=8003`, `NODE_ENV=production`, and restarts the app if it goes over 1 GB of memory. Edit it to change these.
+`ecosystem.config.js` sets `PORT=8003` and `NODE_ENV=production`. Edit it to change these, or to add the tuning variables below to its `env`.
+
+#### Tuning
+
+These environment variables (in `.env` or `ecosystem.config.js`) control the shared Chromium:
+
+| Variable | Default | Description |
+|---|---|---|
+| `PDF_CONCURRENCY` | `2` | PDFs rendered at the same time. Extra requests wait in a queue. Each render adds about 100 MB on top of the browser. |
+| `PDF_BROWSER_IDLE_MS` | `60000` | Close Chromium after this many ms without requests, so an idle server only uses ~40 MB. The next request reopens it (about 0.7 s extra). `0` keeps it open. |
+| `PDF_BROWSER_MAX_RENDERS` | `200` | Relaunch Chromium after this many PDFs, to release any memory it accumulates. |
+
+If Chromium crashes, the next request starts a new one automatically.
 
 Useful commands:
 
@@ -457,7 +469,7 @@ sudo certbot --nginx -d pdf.example.com   # free TLS certificate from Let's Encr
 
 ### Security notes
 
-- **There is no authentication built in.** Anyone who can reach the port can generate PDFs, and each request starts a Chromium process. On a public server, add rate limiting (as in the nginx example), and consider HTTP basic auth or an IP allowlist in nginx.
+- **There is no authentication built in.** Anyone who can reach the port can generate PDFs, and each request uses server CPU and memory while it renders. On a public server, add rate limiting (as in the nginx example), and consider HTTP basic auth or an IP allowlist in nginx.
 - The app listens on all interfaces. Firewall its port (e.g. `ufw allow 'Nginx Full'`, without opening `8003`) so traffic only goes through nginx.
 - HTML from `html` elements is sanitized before rendering, but treat the service as something that renders untrusted input. Run it as an unprivileged user.
 
