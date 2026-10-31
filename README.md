@@ -4,7 +4,7 @@ Turn a JSON array of report **elements** into a print-ready PDF: A4, Letter or a
 
 Send titles, paragraphs, tables, metrics, charts, or raw HTML styled with **Tailwind CSS**, and get back a PDF. Rendering happens in headless Chromium (Puppeteer), so what you'd see in a browser is what you get on paper.
 
-- **Hosted API:** `https://json2pdf.guss.uk/api/generate-pdf` (docs at [json2pdf.guss.uk](https://json2pdf.guss.uk))
+- **Hosted API:** `https://json2pdf.myshell.uk/api/generate-pdf` (docs at [json2pdf.myshell.uk](https://json2pdf.myshell.uk))
 - **Self-hosted:** run your own instance with Node.js and pm2 (see [Self-hosting](#self-hosting)).
 
 ## Features
@@ -113,7 +113,7 @@ Every element's look comes from a **theme**: a CSS file in the `themes/` folder.
 { "elements": [ ... ], "options": { "theme": "blue" } }
 ```
 
-Try them on the full sample document: [`/design-preview?theme=default`](https://json2pdf.guss.uk/design-preview?theme=default) and [`/design-preview?theme=blue`](https://json2pdf.guss.uk/design-preview?theme=blue). Other options combine too, e.g. `/design-preview?theme=blue&landscape=true`.
+Try them on the full sample document: [`/design-preview?theme=default`](https://json2pdf.myshell.uk/design-preview?theme=default) and [`/design-preview?theme=blue`](https://json2pdf.myshell.uk/design-preview?theme=blue). Other options combine too, e.g. `/design-preview?theme=blue&landscape=true`.
 
 | Theme | Look |
 |---|---|
@@ -169,7 +169,7 @@ Things to keep in mind:
 **curl**
 
 ```bash
-curl -X POST https://json2pdf.guss.uk/api/generate-pdf \
+curl -X POST https://json2pdf.myshell.uk/api/generate-pdf \
   -H "Content-Type: application/json" \
   -d '{"elements":[{"type":"title","content":"Hello"},{"type":"paragraph","content":"My first PDF"}]}' \
   -o report.pdf
@@ -178,7 +178,7 @@ curl -X POST https://json2pdf.guss.uk/api/generate-pdf \
 **JavaScript (Node 18+ / browser)**
 
 ```js
-const res = await fetch('https://json2pdf.guss.uk/api/generate-pdf', {
+const res = await fetch('https://json2pdf.myshell.uk/api/generate-pdf', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -200,7 +200,7 @@ require('fs').writeFileSync('report.pdf', pdf);
 import requests
 
 res = requests.post(
-    "https://json2pdf.guss.uk/api/generate-pdf",
+    "https://json2pdf.myshell.uk/api/generate-pdf",
     json={"elements": [{"type": "title", "content": "Hello"}, {"type": "paragraph", "content": "My first PDF"}]},
     timeout=60,
 )
@@ -208,7 +208,7 @@ res.raise_for_status()
 open("report.pdf", "wb").write(res.content)
 ```
 
-For a self-hosted instance, replace `https://json2pdf.guss.uk` with your own URL (e.g. `http://localhost:8003`).
+For a self-hosted instance, replace `https://json2pdf.myshell.uk` with your own URL (e.g. `http://localhost:8003`).
 
 ### Other routes
 
