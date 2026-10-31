@@ -24,6 +24,7 @@
         "build:app": "vite build -c vite.config.app.ts",
         "build:server": "tsc --outDir dist-server",
         "build": "npm run build:lib && npm run build:app && npm run build:server",
+        "build:prod": "npm run build:app && npm run build:server",
         "serve": "node dist-server/server.js"
     },
     "keywords": [],

@@ -359,7 +359,8 @@ Icon keys used by these elements:
 - **Node.js 20.19+** (22 LTS recommended) and npm
 - **Linux server** (Ubuntu/Debian examples below) with the system libraries Chromium needs
 - Outbound internet access while rendering, to load the Inter font from Google Fonts. Without it, PDFs fall back to Helvetica/Arial.
-- **RAM:** about **250–320 MB while rendering** and ~40 MB idle. Requests share one Chromium (each in an isolated context) and at most 2 render at a time, so a burst of requests queues instead of piling up. Measured peak: 404 MB with 3 requests for the 22-page preview at once. **1 vCPU and 1 GB of RAM** is enough; 2 GB gives headroom (see [Tuning](#tuning))
+- **RAM:** about **250–320 MB while rendering** and ~40 MB idle. Requests share one Chromium (each in an isolated context) and at most 2 render at a time, so a burst of requests queues instead of piling up. Measured peak: 404 MB with 3 requests for the 22-page preview at once. **1 vCPU and 1 GB of RAM** is enough to run it; 2 GB gives headroom (see [Tuning](#tuning))
+- **Installing and building need more memory than running:** up to ~600 MB for `npm run build:prod`. On a 1 GB server, add swap first (see [Small servers](#small-servers-1-gb-ram))
 
 ### 1. Install
 
@@ -369,12 +370,12 @@ cd json2pdf
 npm ci
 ```
 
-`npm ci` also downloads the Chromium build that Puppeteer uses, into `~/.cache/puppeteer` of the **current user**. Run the app with pm2 as that same user.
+`npm ci` also downloads the Chromium build that Puppeteer uses (`chrome-headless-shell`, ~250 MB) into `~/.cache/puppeteer` of the **current user**. Run the app with pm2 as that same user. The full Chrome browser isn't downloaded, because the app doesn't use it (see `.puppeteerrc.cjs`).
 
 On a fresh server, install Chromium's system dependencies (needs sudo):
 
 ```bash
-sudo npx puppeteer browsers install chrome --install-deps
+sudo npx puppeteer browsers install chrome-headless-shell --install-deps
 # optional, for emoji and non-Latin text:
 sudo apt-get install -y fonts-noto-color-emoji fonts-noto-cjk
 ```
@@ -392,13 +393,14 @@ The port defaults to `3000` if `PORT` isn't set.
 ### 3. Build
 
 ```bash
-npm run build
+npm run build:prod
 ```
 
-This builds three things:
+This builds what the server needs:
 - `dist-app/`: the page that Chromium renders
 - `dist-server/`: the compiled API server
-- `dist/`: the Vue component library
+
+`npm run build` also builds `dist/`, the Vue component library for other apps. The server doesn't use it, and it's the most memory-hungry step (~740 MB), so skip it on servers.
 
 ### 4. Run with pm2
 
@@ -477,9 +479,35 @@ sudo certbot --nginx -d pdf.example.com   # free TLS certificate from Let's Encr
 
 ```bash
 git pull
-npm ci
-npm run build
-pm2 reload json2pdf
+npm ci --no-audit --no-fund
+npm run build:prod
+pm2 reload ecosystem.config.js
+```
+
+`pm2 reload ecosystem.config.js` (rather than `pm2 reload json2pdf`) also applies changes to the pm2 config itself.
+
+### Small servers (1 GB RAM)
+
+The app runs fine in 1 GB, but `npm ci` and the build can briefly need more than that, and without swap the server freezes or the kernel kills processes. Add 2 GB of swap once:
+
+```bash
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab   # keep it after reboots
+```
+
+With swap in place, install and build normally. They'll be slower, but they finish. To skip building on the server entirely, build on another machine and copy the result:
+
+```bash
+# on your machine
+npm ci && npm run build:prod
+rsync -az dist-app dist-server user@server:/path/to/json2pdf/
+
+# on the server: runtime dependencies only, no build tools
+npm ci --omit=dev --no-audit --no-fund
+pm2 reload ecosystem.config.js
 ```
 
 ---

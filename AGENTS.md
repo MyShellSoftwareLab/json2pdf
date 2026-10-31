@@ -20,6 +20,7 @@ npm run build:app    # Vite build of the render app -> dist-app/ (what Puppeteer
 npm run build:lib    # Vite library build -> dist/ (ES + UMD + .d.ts)
 npm run build:server # tsc -> dist-server/ (compiled API for production)
 npm run build        # lib + app + server
+npm run build:prod   # app + server only: what servers need (skips the ~740 MB library build)
 npm run serve        # node dist-server/server.js (what pm2 runs, see ecosystem.config.js)
 npx ts-node src/test-api.ts   # POST src/exampleData.json to a running server -> output.pdf
 npx tsc --noEmit              # type-check (there is no lint or test suite)
